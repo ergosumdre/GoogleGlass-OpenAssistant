@@ -39,7 +39,6 @@ import java.io.File
 import java.io.IOException
 import java.time.Duration
 
-
 private val TAG = CameraFragment::class.simpleName!!
 
 class LoadingFragment : Fragment() {
@@ -80,7 +79,6 @@ class LoadingFragment : Fragment() {
     fun onGesture(glassGesture: GlassGesture) {
         when (glassGesture.gesture) {
             GlassGestureDetector.Gesture.SWIPE_DOWN -> {
-                // TODO: Cancel all HTTP calls so we don't try to navigate from LoadingFragment to ResultFragment but the user is actually on CameraFragment
                 requireView().findNavController()
                     .navigate(R.id.action_loadingFragment_to_cameraFragment)
             }
@@ -138,44 +136,29 @@ class LoadingFragment : Fragment() {
             }
         imageFile.delete()
 
-        // :(. String sub = better?
-        val visionRequestPayload = JSONObject()
-        visionRequestPayload.put("model", "gpt-4-vision-preview")
-        val requestPayloadPrompt = JSONObject()
-        requestPayloadPrompt.put("type", "text")
-        requestPayloadPrompt.put("text", prompt)
-        val requestPayloadImage = JSONObject()
-        requestPayloadImage.put("type", "image_url")
-        val requestPayloadImageUrl = JSONObject()
-        requestPayloadImageUrl.put("url", "data:image/jpeg;base64,$base64Image")
-        requestPayloadImageUrl.put("detail", "low") // "low", "high", or "auto"
-        requestPayloadImage.put("image_url", requestPayloadImageUrl)
-        val requestPayloadContent = JSONArray()
-        requestPayloadContent.put(requestPayloadPrompt)
-        requestPayloadContent.put(requestPayloadImage)
-        val requestPayloadMessage = JSONObject()
-        requestPayloadMessage.put("role", "user")
-        requestPayloadMessage.put("content", requestPayloadContent)
-        val requestPayloadMessages = JSONArray()
-        requestPayloadMessages.put(requestPayloadMessage)
-        visionRequestPayload.put("messages", requestPayloadMessages)
-        visionRequestPayload.put("max_tokens", 300)
+        // Create the request payload
+        val visionRequestPayload = JSONObject().apply {
+            put("model", "llava")
+            put("prompt", prompt)
+            put("stream", false)
+            put("images", JSONArray().put(base64Image))
+        }
 
-        val openAiVisionRequest = Request.Builder()
-            .url("https://api.openai.com/v1/chat/completions")
+        // Create the request
+        val visionRequest = Request.Builder()
+            .url("http://localhost:11434/api/generate")
             .addHeader("Content-Type", "application/json")
-            .addHeader("Authorization", "Bearer $openAiApiKey")
-            .post(visionRequestPayload.toString().toRequestBody())
+            .post(visionRequestPayload.toString().toRequestBody("application/json".toMediaTypeOrNull()))
             .build()
 
-        okHttpClient.newCall(openAiVisionRequest).enqueue(object : Callback {
+        okHttpClient.newCall(visionRequest).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                Log.e(TAG, "Failed while calling OpenAI vision", e)
+                Log.e(TAG, "Failed while calling custom vision API", e)
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val responseText = response.body?.string() ?: ""
-                Log.d(TAG, "OpenAI Vision Response: $responseText")
+                Log.d(TAG, "Custom Vision API Response: $responseText")
 
                 requireActivity().runOnUiThread {
                     requireView().findNavController().navigate(
