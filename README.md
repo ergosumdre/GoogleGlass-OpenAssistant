@@ -1,6 +1,6 @@
 # GlassAssistant
 
-Use OpenAI's Vision and Transcription capabilities to understand the world around you.
+Use LLava Vision from Ollama and OpenAI's Transcription capabilities to understand the world around you.
 
 ## Setup
 
