@@ -33,6 +33,7 @@ import okhttp3.Response
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.json.JSONArray
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -113,14 +114,26 @@ class LoadingFragment : Fragment() {
                 val responseText = response.body?.string() ?: ""
                 Log.d(TAG, "OpenAI Speech Response: $responseText")
 
-                val jsonResponse = JSONObject(responseText)
-                val content = jsonResponse.getString("text")
-
-                requireActivity().runOnUiThread {
-                    requireView().findViewById<TextView>(R.id.tvLoading).text = content
+                try {
+                    val jsonResponse = JSONObject(responseText)
+                    if (jsonResponse.has("text")) {
+                        val content = jsonResponse.getString("text")
+                        requireActivity().runOnUiThread {
+                            requireView().findViewById<TextView>(R.id.tvLoading).text = content
+                        }
+                        getVisionResponse(content, args.imageFile)
+                    } else {
+                        Log.e(TAG, "No 'text' field in the response")
+                        requireActivity().runOnUiThread {
+                            requireView().findViewById<TextView>(R.id.tvLoading).text = "Failed to get response text"
+                        }
+                    }
+                } catch (e: JSONException) {
+                    Log.e(TAG, "Failed to parse response", e)
+                    requireActivity().runOnUiThread {
+                        requireView().findViewById<TextView>(R.id.tvLoading).text = "Failed to parse response"
+                    }
                 }
-
-                getVisionResponse(content, args.imageFile)
             }
         })
     }
@@ -160,10 +173,24 @@ class LoadingFragment : Fragment() {
                 val responseText = response.body?.string() ?: ""
                 Log.d(TAG, "Custom Vision API Response: $responseText")
 
-                requireActivity().runOnUiThread {
-                    requireView().findNavController().navigate(
-                        LoadingFragmentDirections.actionLoadingFragmentToResultFragment(responseText)
-                    )
+                try {
+                    val jsonResponse = JSONObject(responseText)
+                    val content = if (jsonResponse.has("response")) {
+                        jsonResponse.getString("response")
+                    } else {
+                        "No 'response' field found in JSON"
+                    }
+
+                    requireActivity().runOnUiThread {
+                        requireView().findNavController().navigate(
+                            LoadingFragmentDirections.actionLoadingFragmentToResultFragment(content)
+                        )
+                    }
+                } catch (e: JSONException) {
+                    Log.e(TAG, "Failed to parse JSON response", e)
+                    requireActivity().runOnUiThread {
+                        requireView().findViewById<TextView>(R.id.tvLoading).text = "Failed to parse JSON response"
+                    }
                 }
             }
         })
