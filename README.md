@@ -7,8 +7,8 @@ Imagine a world where you can understand the world around you, simply by looking
 To make Google Glass run Open Source Models, follow these simple steps:
 1. **Install the Essentials:** Download and install Tailscale on your hosted Ollama machine and Google Glass from F-Droid.
 2. **Configure Your Ollama:** Edit line 162 on `app/src/main/java/dev/synople/glassassistant/fragments/LoadingFragment.kt` with your Tailscale Host IP Address.
-3. **Run LLAVA:** Download LLAVA from Ollama on your host machine with the following args: `OLLAMA_HOST=XXX.XXX.XX.XXX:11434` ollama run llava.
-4. **Start Ollama:** Start Ollama on your host machine using the following args: `OLLAMA_HOST=XXX.XXX.XX.XXX:11434` ollama run serve.
+3. **Run LLAVA:** Download LLAVA from Ollama on your host machine with the following args: `OLLAMA_HOST=XXX.XXX.XX.XXX:11434 ollama run llava`.
+4. **Start Ollama:** Start Ollama on your host machine using the following args: `OLLAMA_HOST=XXX.XXX.XX.XXX:11434 ollama run serve`.
 5. **Get Your OpenAI API Key:** Generate an OpenAI API Key from the OpenAI platform.
 6. **Turn Your API Key into a QR Code:** Convert your API Key into a QR Code.
 7. **Install and Launch the GlassAssistant App:** Install and launch the GlassAssistant app on your Google Glass.
