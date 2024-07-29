@@ -28,6 +28,7 @@ private val TAG = ApiKeyFragment::class.simpleName!!
 
 class ApiKeyFragment : Fragment() {
 
+    private var isScanningApiKey = true
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -37,17 +38,27 @@ class ApiKeyFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val flow: Flow<String> = requireContext().dataStore.data.map { preferences ->
+        val apiKeyFlow: Flow<String> = requireContext().dataStore.data.map { preferences ->
             preferences[GlassAssistantConstants.DATASTORE_OPEN_AI_API_KEY] ?: ""
         }
 
+        val ipAddressFlow: Flow<String> = requireContext().dataStore.data.map { preferences ->
+            preferences[GlassAssistantConstants.DATASTORE_TAILSCALE_HOST_IP] ?: ""
+        }
+
         lifecycleScope.launch {
-            flow.collect { apiKey ->
+            apiKeyFlow.collect { apiKey ->
                 if (apiKey.isEmpty()) {
-                    startQrCodeScanner()
+                    startQrCodeScanner(true)
                 } else {
-                    view.findNavController().navigate(R.id.action_apiKeyFragment_to_cameraFragment)
-                    this.coroutineContext.job.cancel()
+                    ipAddressFlow.collect { ipAddress ->
+                        if (ipAddress.isEmpty()) {
+                            startQrCodeScanner(false)
+                        } else {
+                            view.findNavController().navigate(R.id.action_apiKeyFragment_to_cameraFragment)
+                            this.coroutineContext.job.cancel()
+                        }
+                    }
                 }
             }
         }
@@ -63,20 +74,19 @@ class ApiKeyFragment : Fragment() {
     @Subscribe
     fun onGesture(glassGesture: GlassGesture) {
         when (glassGesture.gesture) {
-
             GlassGestureDetector.Gesture.SWIPE_DOWN -> {
                 requireActivity().finishAffinity()
                 exitProcess(30000)
             }
-
             else -> {}
         }
     }
 
-    private fun startQrCodeScanner() {
-        IntentIntegrator.forSupportFragment((this as Fragment))
+    private fun startQrCodeScanner(isApiKey: Boolean) {
+        isScanningApiKey = isApiKey
+        IntentIntegrator.forSupportFragment(this)
             .setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
-            .setPrompt("Scan a QR code with your OpenAI API Key.")
+            .setPrompt(if (isApiKey) "Scan a QR code with your OpenAI API Key." else "Scan a QR code with your TailScale Host IP Address.")
             .setBeepEnabled(false)
             .setBarcodeImageEnabled(false)
             .setTimeout(30000)
@@ -91,11 +101,18 @@ class ApiKeyFragment : Fragment() {
             barcodeResult.contents?.let { barcodeContents ->
                 lifecycleScope.launch {
                     requireContext().dataStore.edit { settings ->
-                        settings[GlassAssistantConstants.DATASTORE_OPEN_AI_API_KEY] =
-                            barcodeContents
+                        if (isScanningApiKey) {
+                            settings[GlassAssistantConstants.DATASTORE_OPEN_AI_API_KEY] = barcodeContents
+                            // After storing API key, start scanning for IP address
+                            startQrCodeScanner(false)
+                        } else {
+                            settings[GlassAssistantConstants.DATASTORE_TAILSCALE_HOST_IP] = barcodeContents
+                            // After storing IP address, navigate to the next fragment
+                            view?.findNavController()?.navigate(R.id.action_apiKeyFragment_to_cameraFragment)
+                        }
                     }
                 }
-            } ?: {
+            } ?: run {
                 requireView().findViewById<TextView>(R.id.tvApiKey).text =
                     "Something went wrong. Exit the app and try again."
             }
