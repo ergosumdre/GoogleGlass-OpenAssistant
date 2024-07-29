@@ -49,6 +49,7 @@ class LoadingFragment : Fragment() {
         .build()
 
     private var openAiApiKey = ""
+    private var tailscale_host_ip = ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -61,6 +62,7 @@ class LoadingFragment : Fragment() {
         lifecycleScope.launch {
             requireContext().dataStore.data.firstOrNull { true }?.let { value ->
                 openAiApiKey = value[GlassAssistantConstants.DATASTORE_OPEN_AI_API_KEY] ?: ""
+                tailscale_host_ip = value[GlassAssistantConstants.DATASTORE_TAILSCALE_HOST_IP] ?: ""
             }
 
             args.recorderFile?.let {
@@ -159,7 +161,7 @@ class LoadingFragment : Fragment() {
 
         // Create the request
         val visionRequest = Request.Builder()
-            .url("http://localhost:11434/api/generate")
+            .url("$tailscale_host_ip:11434/api/generate")
             .addHeader("Content-Type", "application/json")
             .post(visionRequestPayload.toString().toRequestBody("application/json".toMediaTypeOrNull()))
             .build()
