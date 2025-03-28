@@ -1,6 +1,6 @@
 # Google Glass Meets Open Source Multimodal Models
 
-Imagine a world where you can understand the world around you, simply by looking at it. With Google Glass Open Source Assistant, you can harness the power of open-source AI-powered vision to unlock new possibilities. By combining the capabilities of LLava Vision from Ollama and OpenAI's Transcription capabilities, you can turn your Google Glass into a powerful tool for understanding and interacting with the world.
+Imagine a world where you can understand the world around you, simply by looking at it. With Google Glass Open Source Assistant, you can harness the power of open-source AI-powered vision to unlock new possibilities. By combining the capabilities of LLama from Meta and OpenAI's Transcription capabilities, you can turn your Google Glass into a powerful tool for understanding and interacting with the world.
 
 
 ## Getting Started
